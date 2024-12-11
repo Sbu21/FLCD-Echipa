@@ -19,7 +19,7 @@ class SymbolTable:
         return unique_code
 
     def display(self):
-        with open("ST.out", "w") as file:
+        with open("../ST.out", "w") as file:
             file.write("Symbol Table Contents:\n")
             for i, bucket in enumerate(self.table):
                 if bucket:

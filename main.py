@@ -1,6 +1,14 @@
+from Lexer.Lexer import Lexer
+from Lexer.SymbolTable import SymbolTable
 from Parser.CFG.ContextFreeGrammar import ContextFreGrammar as Cfg, RecursiveDescentParser
 
 if __name__ == "__main__":
+    symbol_table = SymbolTable(10)
+    lexer = Lexer("token.in", symbol_table)
+
+    lexer.tokenize("p2.txt")
+    symbol_table.display()
+
     grammar1 = Cfg('grammar')
     """
     print(grammar1)
@@ -22,7 +30,7 @@ if __name__ == "__main__":
     input_sequence = ["a", "c", "b"]  # for grammar 1
 
     input_sequence2 = [  # for grammar g1
-        "function", "myFunction", "(", "int", "a", ",", "string", "b", ",", "array", "c", ")",
+        "function", "identifier", "(", "int", "a", ",", "string", "b", ",", "array", "identifier", ")",
         "a", "=", "10", ";",
         "if", "a", ">", "b",
         "cmpdstmt", "else",
@@ -36,7 +44,7 @@ if __name__ == "__main__":
     ]
 
     # Initialize and run the parser
-    parser = RecursiveDescentParser(grammar1, input_sequence)
+    parser = RecursiveDescentParser(grammar2, input_sequence2)
     result = parser.parse()
     # Output the result
     print(f"Result: {result}")

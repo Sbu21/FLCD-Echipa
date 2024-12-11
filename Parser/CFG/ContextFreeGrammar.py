@@ -123,17 +123,12 @@ class RecursiveDescentParser:
         self.working_stack: list[str] = []
         self.input_stack = [grammar.start_symbol]
         self.parse_table: list[str] = []
-        self.current_nonterminal_prod_id: dict[str, int] = {}
+        self.production_index_stack: list[int] = []
 
     def __str__(self) -> str:
         return f"State: {self.state}, Index: {self.index}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}"
 
     def expand(self) -> None:
-        """
-        Perform the Expand action:
-        - If the head of the input stack is a nonterminal, expand it using its first production.
-        - Update the working stack and input stack accordingly.
-        """
         if not self.input_stack:
             raise ParseException("You should not call 'expand' when the input stack is empty!")
 
@@ -142,25 +137,18 @@ class RecursiveDescentParser:
             raise ParseException(
                 f"You should not call 'expand' when the top is a terminal!\nHead was {current}")
 
-        # first time encountering this non-terminal?
-        #  => make sure to remember it!
-        if current not in self.current_nonterminal_prod_id:
-            self.current_nonterminal_prod_id[current] = 0
-
-        production_index: int = self.current_nonterminal_prod_id[current]
         productions: list[list[str]] = self.grammar.get_productions_for(current)
 
-        # non-terminal with no productions?! -> I guess this is also an error produced by wrong code :)
         if not productions:
             raise ParseException(
                 f"You created a non-terminal with no productions\nThe terminal is {current}")
 
-        current_production = productions[production_index]
-        self.working_stack.append(f"{current}{production_index + 1}")
-        self.input_stack = current_production + self.input_stack
+        # Push the first production index for this nonterminal
+        self.production_index_stack.append(0)
+        current_production = productions[0]
 
-        self.current_nonterminal_prod_id[current] = production_index + \
-                                                    (1 if production_index + 1 < len(productions) else 0)
+        self.working_stack.append(f"{current}1")
+        self.input_stack = current_production + self.input_stack
 
     def advance(self) -> None:
         """
@@ -215,46 +203,36 @@ class RecursiveDescentParser:
         self.index -= 1
 
     def another_try(self) -> None:
-        """
-        Perform the 'Another Try' action:
-        - If the head of the working stack is a nonterminal and another production exists for it,
-          switch to the next production.
-        - Otherwise, backtrack by removing the nonterminal from the working stack and restoring it
-          to the input stack.
-        - If no more productions exist and the nonterminal is the start symbol with index 1,
-          raise a parse error.
-        """
         if not self.working_stack:
             raise ParseException("Cannot perform 'another_try' because the working stack is empty.")
 
         head = self.working_stack.pop()
 
-        # Check if the head represents a non-terminal or terminal
-        if head[-1].isdigit():  # This assumes that non-terminals do not end with digits
-            nonterminal = head[:-1]  # Extract the non-terminal part
+        if head[-1].isdigit():
+            nonterminal = head[:-1]
         else:
             raise ParseException("You should not call 'another_try' on a terminal.")
 
-        production_index = self.current_nonterminal_prod_id[nonterminal]
+        if not self.production_index_stack:
+            raise ParseException(f"No production index available for nonterminal {nonterminal}.")
+
+        current_production_index = self.production_index_stack.pop()
         productions = self.grammar.get_productions_for(nonterminal)
 
-        if not productions:
-            raise ParseException(f"No productions exist for nonterminal {nonterminal}.")
-
-        if production_index + 1 >= len(productions):
+        if current_production_index + 1 >= len(productions):
             self.input_stack.insert(0, nonterminal)
             if self.index == 0 and nonterminal == self.grammar.start_symbol:
                 raise ParseException("Parsing failed: no more options for the start symbol.")
             self.insuccess()
             return
 
-        next_production_index = production_index + 1
+        next_production_index = current_production_index + 1
+        self.production_index_stack.append(next_production_index)
         next_production = productions[next_production_index]
 
         self.working_stack.append(f"{nonterminal}{next_production_index + 1}")
-        current_production = productions[production_index]
+        current_production = productions[current_production_index]
 
-        # Delete current production from the input stack
         for _ in current_production:
             self.input_stack.pop(0)
 

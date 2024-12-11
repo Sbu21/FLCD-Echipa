@@ -65,7 +65,7 @@ class Lexer:
         return token, index
 
     def save_pif(self):
-        with open("PIF.out", "w") as file:
+        with open("../PIF.out", "w") as file:
             file.write("Program Internal Form (PIF):\n")
             for entry in self.pif:
                 file.write(f"{entry}\n")
@@ -74,7 +74,7 @@ class Lexer:
 
 if __name__ == "__main__":
     symbol_table = SymbolTable(10)
-    lexer = Lexer("token.in", symbol_table)
+    lexer = Lexer("../token.in", symbol_table)
 
     lexer.tokenize("p2.txt")
     symbol_table.display()

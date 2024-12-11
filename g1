@@ -53,6 +53,7 @@ or
 program -> function identifier ( param_list ) cmpdstmt endfunction
 param_list -> param
 param_list -> param , param_list
+param_list -> eps
 param -> int identifier
 param -> string identifier
 param -> array identifier
@@ -70,16 +71,16 @@ ifstmt -> if condition cmpdstmt endif
 forstmt -> for ( assignstmt condition ; assignstmt ) cmpdstmt endfor
 whilestmt -> while condition cmpdstmt endwhile
 returnstmt -> result <- expression ;
-expression -> expression + term
-expression -> expression - term
+expression -> term + expression'
+expression -> term - expression'
 expression -> term
-term -> term * factor
-term -> term / factor
-term -> term % factor
+term -> factor * term
+term -> factor / term
+term -> factor % term
 term -> factor
 factor -> ( expression )
-factor -> identifier
-factor -> number
+expression -> identifier
+expression -> number
 condition -> expression relation expression
 relation -> <
 relation -> <=
