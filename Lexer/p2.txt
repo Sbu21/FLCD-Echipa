@@ -1,0 +1,17 @@
+function verifyIfPrime(int a)
+	if(a <= 1)
+		result -> 0;
+	endif
+	if(a == 2)
+		result -> 1;
+	endif
+	if(a % 2 == 0)
+		result -> 0;
+	endif
+	for(int d = 3; d * d <= a; d += 2)
+		if(a % d == 0)
+			result -> 0;
+		endif
+	endfor
+	result -> 1;
+endfunction

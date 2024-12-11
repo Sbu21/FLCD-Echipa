@@ -1,0 +1,11 @@
+function findMinNumber(int a, int b, int c)
+	if(a <= b and a <= c)
+		result -> a;
+	endif
+	if(b <= a and b <= c) -> b;
+		result -> b;
+	endif
+	if(c <= a and c <= b) -> c;
+		result -> c;
+	endif
+endfunction

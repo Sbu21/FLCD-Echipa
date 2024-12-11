@@ -1,0 +1,10 @@
+function sumOfNumbers(int n, array numbers)
+	sum = 0;
+	if (n == 0)
+		result -> 0;
+	endif
+	for(int i = 1; i <= n; i += 1)
+		sum = sum + numbers[i];
+	endfor
+	result -> sum;
+endfunction
