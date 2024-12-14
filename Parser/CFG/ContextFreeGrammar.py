@@ -1,7 +1,3 @@
-from Lexer.Lexer import Lexer
-from Lexer.SymbolTable import SymbolTable
-
-
 class ContextFreGrammar:
     NONTERMINALS: int = 0
     TERMINALS: int = 1
@@ -90,6 +86,7 @@ class ContextFreGrammar:
 
 class ParseException(Exception):
     pass
+
 
 class RecursiveDescentParser:
     NORMAL: str = "normal"
@@ -278,5 +275,3 @@ class RecursiveDescentParser:
             return "Sequence accepted"
         else:
             return "Error: Parsing failed"
-
-

@@ -78,7 +78,7 @@ class FiniteAutomaton:
         return current_state in self.final_states
 
 
-def menu(fa):
+def menu(finite_automata):
     while True:
         print("\nMenu:")
         print("1. Display FA elements")
@@ -88,32 +88,32 @@ def menu(fa):
         choice = input("Enter your choice: ")
 
         if choice == "1":
-            fa.display()
+            finite_automata.display()
         elif choice == "2":
             sequence = input("Enter the sequence: ")
-            if fa.validate_sequence(sequence):
+            if finite_automata.validate_sequence(sequence):
                 print("Sequence accepted.")
             else:
                 print("Sequence not accepted.")
         elif choice == "3":
             source_code = input("Enter source code: ")
-            detect_tokens(source_code, fa)
+            detect_tokens(source_code, finite_automata)
         elif choice == "0":
             break
         else:
             print("Invalid choice. Try again.")
 
 
-def detect_tokens(source_code, fa):
+def detect_tokens(source_code, finite_automata):
     tokens = source_code.split()
     for token in tokens:
         if re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', token):  # Identifier pattern
-            if fa.validate_sequence(token):
+            if finite_automata.validate_sequence(token):
                 print(f"Token <IDENTIFIER>: {token}")
             else:
                 print(f"Invalid identifier: {token}")
         elif re.fullmatch(r'\d+', token):
-            if fa.validate_sequence(token):
+            if finite_automata.validate_sequence(token):
                 print(f"Token <INTEGER CONSTANT>: {token}")
             else:
                 print(f"Invalid integer constant: {token}")

@@ -3,12 +3,13 @@ from Lexer import SymbolTable
 
 
 class Lexer:
-    def __init__(self, token_file, symbol_table):
+    def __init__(self, token_file, table):
         self.tokens = self.load_tokens(token_file)
-        self.symbol_table = symbol_table
+        self.symbol_table = table
         self.pif = []
 
-    def load_tokens(self, token_file):
+    @staticmethod
+    def load_tokens(token_file):
         tokens = {}
         with open(token_file, "r") as file:
             for index, line in enumerate(file.readlines()):
@@ -45,7 +46,8 @@ class Lexer:
         print("Lexically correct")
         self.save_pif()
 
-    def extract_token(self, line, index):
+    @staticmethod
+    def extract_token(line, index):
         operators = {'+', '-', '*', '/', '%', '=', '==', '<', '>', '->', '+=', '<=', '>='}
         token = ""
         if line[index].isalnum() or line[index] == '_':
@@ -73,7 +75,7 @@ class Lexer:
 
 
 if __name__ == "__main__":
-    symbol_table = SymbolTable(10)
+    symbol_table = SymbolTable.SymbolTable(10)
     lexer = Lexer("../token.in", symbol_table)
 
     lexer.tokenize("p2.txt")
