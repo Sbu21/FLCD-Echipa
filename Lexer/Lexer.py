@@ -1,19 +1,18 @@
 import re
-from Lexer import SymbolTable
 
 
 class Lexer:
     def __init__(self, token_file, symbol_table):
         self.tokens = self.load_tokens(token_file)
         self.symbol_table = symbol_table
-        self.pif = []
+        self.pif = []  # This will store tokens, "identifier", or "number"
 
     def load_tokens(self, token_file):
         tokens = {}
         with open(token_file, "r") as file:
-            for index, line in enumerate(file.readlines()):
+            for line in file.readlines():
                 token = line.strip()
-                tokens[token] = index
+                tokens[token] = token  # Map token to itself for easy lookup
         return tokens
 
     def tokenize(self, source_file):
@@ -21,6 +20,7 @@ class Lexer:
             source_code = file.readlines()
 
         line_number = 0
+        errors = []
         for line in source_code:
             line_number += 1
             index = 0
@@ -30,51 +30,43 @@ class Lexer:
                     continue
 
                 token, index = self.extract_token(line, index)
-                if token in self.tokens:
-                    self.pif.append((token, self.tokens[token], -1))
-                elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', token):
-                    code = self.symbol_table.insert(token)
-                    self.pif.append((token, self.tokens["IDENTIFIER"], code))
-                elif re.match(r'^\d+$', token):
-                    code = self.symbol_table.insert(token)
-                    self.pif.append((token, self.tokens["CONSTANT"], code))
-                else:
-                    print(f"Lexical error at line {line_number}, token '{token}'")
-                    return
+                if token in self.tokens:  # Reserved keywords or operators
+                    self.pif.append(token)
+                elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', token):  # Identifier
+                    self.symbol_table.insert(token)
+                    self.pif.append("identifier")
+                elif re.match(r'^\d+$', token):  # Constant
+                    self.symbol_table.insert(token)
+                    self.pif.append("number")
+                else:  # Unknown token
+                    errors.append((line_number, token))
 
-        print("Lexically correct")
-        self.save_pif()
+        if errors:
+            for line, token in errors:
+                print(f"Lexical error at line {line}: '{token}'")
+        else:
+            print("Lexically correct")
 
     def extract_token(self, line, index):
         operators = {'+', '-', '*', '/', '%', '=', '==', '<', '>', '->', '+=', '<=', '>='}
         token = ""
+
+        # Handle alphanumeric tokens (IDENTIFIERS, CONSTANTS)
         if line[index].isalnum() or line[index] == '_':
             while index < len(line) and (line[index].isalnum() or line[index] == '_'):
                 token += line[index]
                 index += 1
+        # Handle operators
         elif line[index] in '+-*/%<=>':
             while index < len(line) and token + line[index] in operators:
                 token += line[index]
                 index += 1
+        # Handle single-character tokens (e.g., (), [], ;, ,)
         elif line[index] in '()[];,':
             token = line[index]
             index += 1
-        else:
+        else:  # Unrecognized character
             token = line[index]
             index += 1
+
         return token, index
-
-    def save_pif(self):
-        with open("../PIF.out", "w") as file:
-            file.write("Program Internal Form (PIF):\n")
-            for entry in self.pif:
-                file.write(f"{entry}\n")
-        print("Program internal form written to PIF.out")
-
-
-if __name__ == "__main__":
-    symbol_table = SymbolTable(10)
-    lexer = Lexer("../token.in", symbol_table)
-
-    lexer.tokenize("p2.txt")
-    symbol_table.display()

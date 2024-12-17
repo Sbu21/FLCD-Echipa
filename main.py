@@ -6,7 +6,8 @@ if __name__ == "__main__":
     symbol_table = SymbolTable(10)
     lexer = Lexer("token.in", symbol_table)
 
-    lexer.tokenize("p2.txt")
+    lexer.tokenize("p1.txt")
+    print(lexer.pif)
     symbol_table.display()
 
     grammar1 = Cfg('grammar')
@@ -29,20 +30,7 @@ if __name__ == "__main__":
 
     input_sequence = ["a", "c", "b"]  # for grammar 1
 
-    input_sequence2 = [  # for grammar g1
-        "function", "identifier", "(", "int", "a", ",", "string", "b", ",", "array", "identifier", ")",
-        "a", "=", "10", ";",
-        "if", "a", ">", "b",
-        "cmpdstmt", "else",
-        "cmpdstmt", "endif",
-        "for", "(", "a", "=", "1", ";", "a", "<", "10", ";", "a", "=", "a", "+", "1", ")",
-        "cmpdstmt", "endfor",
-        "while", "a", ">", "5",
-        "cmpdstmt", "endwhile",
-        "return", "result", ";",
-        "endfunction"
-    ]
-
+    input_sequence2 = lexer.pif
     # Initialize and run the parser
     parser = RecursiveDescentParser(grammar2, input_sequence2)
     result = parser.parse()
