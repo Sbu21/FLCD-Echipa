@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     input_sequence2 = lexer.pif
     # Initialize and run the parser
-    parser = RecursiveDescentParser(grammar2, input_sequence2)
-    result = parser.parse()
+    parser = RecursiveDescentParser(grammar2)
+    result = parser.parse(input_sequence2)
     # Output the result
     print(f"Result: {result}")

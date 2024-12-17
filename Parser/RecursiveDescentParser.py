@@ -9,59 +9,51 @@ class RecursiveDescentParser:
     FINAL: str = "final"
 
     def error(self) -> None:
-        self.state = self.ERROR
+        self.state = RecursiveDescentParser.ERROR
 
     def all_good(self) -> None:
-        self.state = self.NORMAL
+        self.state = RecursiveDescentParser.NORMAL
 
     def insuccess(self) -> None:
-        self.state = self.BACKTRACK
+        self.state = RecursiveDescentParser.BACKTRACK
 
     def end(self) -> None:
-        self.state = self.FINAL
+        self.state = RecursiveDescentParser.FINAL
 
-    def current_input(self) -> str:
-        if len(self.input_stack) <= self.index:
-            raise ParseException(
-                f"Could not retrieve current input for current index {self.index} and input stack of length {len(self.input_stack)}")
-        return self.input_stack[self.index]
-
-    def __init__(self, grammar: ContextFreGrammar, input_sequence) -> None:
+    def __init__(self, grammar: ContextFreGrammar) -> None:
         self.grammar: ContextFreGrammar = grammar
-        self.input_sequence = input_sequence
+        self.input_sequence: list | None = None
         self.state: str = RecursiveDescentParser.NORMAL
         self.index: int = 0
-        self.working_stack: list[str] = []
+        self.working_stack: list[str | tuple[str, int]] = []
         self.input_stack = [grammar.start_symbol]
         self.parse_table: list[str] = []
         self.production_index_stack: list[int] = []
+        if not self.grammar.get_productions():
+            raise ParseException("Provided grammar does not contain any productions")
 
     def __str__(self) -> str:
         return f"State: {self.state}, Index: {self.index}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}"
 
     def expand(self) -> None:
-        if not self.input_stack:
-            raise ParseException("You should not call 'expand' when the input stack is empty!")
-
-        current: str = self.input_stack.pop(0)
+        print(f"EXPAND: {self}")
+        if 0 == len(self.input_stack):
+            self.error()
+            print("Error: Attempted to expand an empty input stack")
+            return
+        current = self.input_stack.pop(0)
         if current not in self.grammar.get_nonterminals():
-            raise ParseException(
-                f"You should not call 'expand' when the top is a terminal!\nHead was {current}")
-
-        productions: list[list[str]] = self.grammar.get_productions_for(current)
-
-        if not productions:
-            raise ParseException(
-                f"You created a non-terminal with no productions\nThe terminal is {current}")
-
-        # Push the first production index for this nonterminal
-        self.production_index_stack.append(0)
-        current_production = productions[0]
-
-        self.working_stack.append(f"{current}1")
-        self.input_stack = current_production + self.input_stack
-        print(
-            f"After Expand: Current: {current}, Production: {current_production}, State: {self.state}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}")
+            self.error()
+            print(f"Error: Attempted to expand a terminal ({current})")
+            return
+        productions = self.grammar.get_productions_for(current)
+        if 0 == len(productions):
+            self.error()
+            print(f"Error: Nonterminal {current} has no productions")
+            return
+        first = productions[0]
+        self.input_stack = list(first) + self.input_stack
+        self.working_stack.append((current, 1))
 
     def advance(self) -> None:
         """
@@ -69,16 +61,13 @@ class RecursiveDescentParser:
         - Match the terminal at the head of the input stack with the current input symbol.
         - Update the working stack, input stack, and current index.
         """
-        if not self.input_stack:
-            raise ParseException("You should not call 'expand' when the input stack is empty!")
-
-        head = self.input_stack.pop(0)
-        if self.index >= len(self.input_sequence) or head != self.input_sequence[self.index]:
-            self.error()
-            return
-
-        self.working_stack.append(head)
+        print(f"ADVANCE: {self}")
         self.index += 1
+        if len(self.input_stack) == 0:
+            self.error()
+            print("Tried advancing with an empty input stack")
+            return
+        self.working_stack.append(self.input_stack.pop(0))
 
     def momentary_insuccess(self) -> None:
         """
@@ -86,13 +75,8 @@ class RecursiveDescentParser:
         - If the terminal at the head of the input stack does not match the current input symbol,
         transition to the backtrack state.
         """
-        if not self.input_stack:
-            raise ParseException("You should not call 'momentary_insuccess' when the input stack is empty!")
-
-        current = self.input_stack[0]
-
-        if self.index < len(self.input_sequence) and current != self.input_sequence[self.index]:
-            self.insuccess()
+        print(f"MOMENTARY INSUCCESS: {self}")
+        self.state = RecursiveDescentParser.BACKTRACK
 
     def back(self):
         """
@@ -100,77 +84,43 @@ class RecursiveDescentParser:
         - If the head of the working stack is a terminal, move it back to the input stack
           and step back in the input sequence.
         """
-        # we can't go back
-        # so there are no more opportunities to explore
-        if not self.working_stack or self.index <= 0:
+        print(f"BACK: {self}")
+        if 0 == len(self.working_stack):
             self.error()
+            print("Error: Nowhere to backtrack")
             return
-
-        current = self.working_stack.pop()
-
-        # TODO not sure if this check needed here
-        if current not in self.grammar.get_terminals():
-            raise ParseException("You should not backtrack on a non-terminal")
-
-        self.input_stack.insert(0, current)
+        terminal = self.working_stack.pop()
         self.index -= 1
+        self.input_stack.insert(0, terminal)
 
     def another_try(self) -> None:
-        if not self.working_stack:
-            raise ParseException("Cannot perform 'another_try' because the working stack is empty.")
-
-        head = self.working_stack.pop()
-
-        # Ensure head represents a nonterminal and has a production index
-        if head[-1].isdigit():
-            nonterminal = head[:-1]
-        else:
-            raise ParseException("You should not call 'another_try' on a terminal.")
-
-        if not self.production_index_stack:
-            raise ParseException(f"No production index available for nonterminal {nonterminal}.")
-
-        current_production_index = self.production_index_stack.pop()
-        productions = self.grammar.get_productions_for(nonterminal)
-
-        # Check if we have exhausted all productions for the nonterminal
-        if current_production_index + 1 >= len(productions):
-            # Remove symbols introduced by the current production
-            current_production = productions[current_production_index]
-            for _ in current_production:
-                if self.input_stack:
-                    popped = self.input_stack.pop(0)
-
-            # Restore the nonterminal to the input stack
-            self.input_stack = [nonterminal] + self.input_stack
-
-            # Special case: Start symbol failure
-            if self.index == 0 and nonterminal == self.grammar.start_symbol:
-                raise ParseException("Parsing failed: no more options for the start symbol.")
-
-            # Transition to failure state
-            self.insuccess()
+        print(f"ANOTHER TRY: {self}")
+        if 0 == len(self.working_stack):
+            self.error()
+            print("Error: Nowhere to backtrack")
+            return
+        last = self.working_stack.pop()
+        if not (isinstance(last, tuple)
+                and len(last) == 2
+                and isinstance(last[0], str)
+                and isinstance(last[1], int)):
+            self.error()
+            print(f"Error: Tried taking another choice for a terminal ({last})")
             return
 
-        # Move to the next production
-        next_production_index = current_production_index + 1
-        self.production_index_stack.append(next_production_index)
-        next_production = productions[next_production_index]
+        last_nonterminal, prod_index = last
+        productions = self.grammar.get_productions_for(last_nonterminal)
+        if prod_index >= len(productions) - 1:
+            if last_nonterminal == self.grammar.start_symbol and self.index == 1:
+                self.error()
+                print("Error: We have exhausted the search")
+            return
+        next_prod = productions[prod_index + 1]
+        # self.input_stack = list(next_prod) + self.input_stack[len(next_prod):]
+        self.input_stack = list(next_prod) + self.input_stack[len(productions[prod_index]):]
 
-        # Add the next production marker to the working stack
-        self.working_stack.append(f"{nonterminal}{next_production_index + 1}")
-
-        # Remove all symbols introduced by the current production
-        current_production = productions[current_production_index]
-        for _ in current_production:
-            if self.input_stack:
-                popped = self.input_stack.pop(0)
-
-        # Insert the next production into the input stack
-        self.input_stack = next_production + self.input_stack
-
-        # Transition to a normal state
-        self.all_good()
+        self.working_stack.append((last_nonterminal, prod_index + 1))
+        self.state = RecursiveDescentParser.NORMAL
 
     def success(self) -> None:
         """
@@ -179,33 +129,51 @@ class RecursiveDescentParser:
           transition to the final state.
         - Otherwise, it's an error, because we haven't successfully parsed the input.
         """
-        if self.index != len(self.input_sequence) or self.input_stack:
-            raise ParseException(
-                "Parsing unsuccessful: either input stack is not empty or input sequence is incomplete.")
-        self.end()
+        print(f"SUCCESS: {self}")
+        if self.input_stack or self.index != (len(self.input_sequence) + 1):
+            self.error()
+            print("Error: Declared success but we didn't satisfy all reqs")
+            return
+        self.state = RecursiveDescentParser.FINAL
 
-    def parse(self):
-        while self.state not in {self.ERROR, self.FINAL}:
-
-            if self.state == self.NORMAL:
-                if self.index == len(self.input_sequence) and not self.input_stack:
-                    self.success()
-                elif self.input_stack[0] in self.grammar.get_nonterminals():
-                    self.expand()
-                elif self.input_stack[0] in self.grammar.get_terminals():
-                    if self.input_stack[0] == self.input_sequence[self.index]:
-                        self.advance()
+    def parse(self, pif: list):
+        print(f"Length of input sequence is {len(pif)}")
+        self.state = RecursiveDescentParser.NORMAL
+        self.index = 1
+        self.working_stack = []
+        self.input_sequence = pif
+        assert self.input_sequence is not None
+        self.input_stack = [_ for _ in pif]
+        while self.state not in [RecursiveDescentParser.ERROR, RecursiveDescentParser.FINAL]:
+            print(f"MAIN LOOP: {self}")
+            match self.state:
+                case RecursiveDescentParser.NORMAL:
+                    if self.index == 1 + len(self.input_sequence) and 0 == len(self.input_stack):
+                        self.success()
+                        continue
+                    if 0 == len(self.input_stack):
+                        raise ParseException("Unexpected end of input sequence.")
+                    current = self.input_stack[0]
+                    if current in self.grammar.get_nonterminals():
+                        self.expand()
+                        continue
+                    if current in self.grammar.get_terminals():
+                        if current == self.input_sequence[self.index - 1]:
+                            self.advance()
+                        else:
+                            self.momentary_insuccess()
+                    continue
+                case RecursiveDescentParser.BACKTRACK:
+                    if len(self.working_stack):
+                        raise ParseException("Unexpected end of processed sequence.")
+                    current = self.working_stack[0]
+                    if current == self.input_sequence[self.index]:
+                        self.back()
                     else:
-                        self.momentary_insuccess()
-                else:
-                    self.error()
-
-            elif self.state == self.BACKTRACK:
-                if self.working_stack and self.working_stack[-1] in self.grammar.get_terminals():
-                    self.back()
-                else:
-                    self.another_try()
-
+                        self.another_try()
+                    continue
+                case _:
+                    raise ParseException(f"Unexpected state \"{self.state}\"")
         if self.state == self.FINAL:
             return "Sequence accepted"
         else:
