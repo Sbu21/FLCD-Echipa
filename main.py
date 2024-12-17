@@ -1,6 +1,7 @@
 from Lexer.Lexer import Lexer
 from Lexer.SymbolTable import SymbolTable
-from Parser.CFG.ContextFreeGrammar import ContextFreGrammar as Cfg, RecursiveDescentParser
+from Parser.CFG.ContextFreeGrammar import ContextFreGrammar as Cfg
+from Parser.RecursiveDescentParser import RecursiveDescentParser
 
 if __name__ == "__main__":
     symbol_table = SymbolTable(10)

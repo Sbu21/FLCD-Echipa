@@ -2,12 +2,13 @@ import re
 
 
 class Lexer:
-    def __init__(self, token_file, symbol_table):
+    def __init__(self, token_file, table):
         self.tokens = self.load_tokens(token_file)
-        self.symbol_table = symbol_table
-        self.pif = []  # This will store tokens, "identifier", or "number"
+        self.symbol_table = table
+        self.pif = []
 
-    def load_tokens(self, token_file):
+    @staticmethod
+    def load_tokens(token_file):
         tokens = {}
         with open(token_file, "r") as file:
             for line in file.readlines():
@@ -47,25 +48,22 @@ class Lexer:
         else:
             print("Lexically correct")
 
-    def extract_token(self, line, index):
+    @staticmethod
+    def extract_token(line, index):
         operators = {'+', '-', '*', '/', '%', '=', '==', '<', '>', '->', '+=', '<=', '>='}
         token = ""
-
-        # Handle alphanumeric tokens (IDENTIFIERS, CONSTANTS)
         if line[index].isalnum() or line[index] == '_':
             while index < len(line) and (line[index].isalnum() or line[index] == '_'):
                 token += line[index]
                 index += 1
-        # Handle operators
         elif line[index] in '+-*/%<=>':
             while index < len(line) and token + line[index] in operators:
                 token += line[index]
                 index += 1
-        # Handle single-character tokens (e.g., (), [], ;, ,)
         elif line[index] in '()[];,':
             token = line[index]
             index += 1
-        else:  # Unrecognized character
+        else:
             token = line[index]
             index += 1
 
