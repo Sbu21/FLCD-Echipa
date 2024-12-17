@@ -60,6 +60,8 @@ class RecursiveDescentParser:
 
         self.working_stack.append(f"{current}1")
         self.input_stack = current_production + self.input_stack
+        print(
+            f"After Expand: Current: {current}, Production: {current_production}, State: {self.state}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}")
 
     def advance(self) -> None:
         """
@@ -119,6 +121,7 @@ class RecursiveDescentParser:
 
         head = self.working_stack.pop()
 
+        # Ensure head represents a nonterminal and has a production index
         if head[-1].isdigit():
             nonterminal = head[:-1]
         else:
@@ -130,24 +133,43 @@ class RecursiveDescentParser:
         current_production_index = self.production_index_stack.pop()
         productions = self.grammar.get_productions_for(nonterminal)
 
+        # Check if we have exhausted all productions for the nonterminal
         if current_production_index + 1 >= len(productions):
-            self.input_stack.insert(0, nonterminal)
+            # Remove symbols introduced by the current production
+            current_production = productions[current_production_index]
+            for _ in current_production:
+                if self.input_stack:
+                    popped = self.input_stack.pop(0)
+
+            # Restore the nonterminal to the input stack
+            self.input_stack = [nonterminal] + self.input_stack
+
+            # Special case: Start symbol failure
             if self.index == 0 and nonterminal == self.grammar.start_symbol:
                 raise ParseException("Parsing failed: no more options for the start symbol.")
+
+            # Transition to failure state
             self.insuccess()
             return
 
+        # Move to the next production
         next_production_index = current_production_index + 1
         self.production_index_stack.append(next_production_index)
         next_production = productions[next_production_index]
 
+        # Add the next production marker to the working stack
         self.working_stack.append(f"{nonterminal}{next_production_index + 1}")
+
+        # Remove all symbols introduced by the current production
         current_production = productions[current_production_index]
-
         for _ in current_production:
-            self.input_stack.pop(0)
+            if self.input_stack:
+                popped = self.input_stack.pop(0)
 
+        # Insert the next production into the input stack
         self.input_stack = next_production + self.input_stack
+
+        # Transition to a normal state
         self.all_good()
 
     def success(self) -> None:
@@ -164,7 +186,6 @@ class RecursiveDescentParser:
 
     def parse(self):
         while self.state not in {self.ERROR, self.FINAL}:
-            print(self.__str__())
 
             if self.state == self.NORMAL:
                 if self.index == len(self.input_sequence) and not self.input_stack:
