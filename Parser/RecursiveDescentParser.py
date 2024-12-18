@@ -7,6 +7,8 @@ class RecursiveDescentParser:
     BACKTRACK: str = "backtrack"
     ERROR: str = "error"
     FINAL: str = "final"
+    NO_PARENT: int = -1
+    NO_SIBLING: int = -1
 
     def error(self) -> None:
         self.state = RecursiveDescentParser.ERROR
@@ -29,11 +31,13 @@ class RecursiveDescentParser:
         self.input_stack = [grammar.start_symbol]
         self.parse_table: list[str] = []
         self.production_index_stack: list[int] = []
+        self.tree: list[tuple[str, int, int]] = []
         if not self.grammar.get_productions():
             raise ParseException("Provided grammar does not contain any productions")
 
     def __str__(self) -> str:
-        return f"State: {self.state}, Index: {self.index}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}"
+        # return f"State: {self.state}, Index: {self.index}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}"
+        return f'Tree: {str(self.tree)}'
 
     def expand(self) -> None:
         print(f"EXPAND: {self}")
@@ -51,8 +55,14 @@ class RecursiveDescentParser:
             self.error()
             print(f"Error: Nonterminal {current} has no productions")
             return
-        first = productions[0]
-        self.input_stack = list(first) + self.input_stack
+        first_production = productions[0]
+        self.input_stack = list(first_production) + self.input_stack
+        parent_index = len(self.tree) - 1
+        sibling_index = RecursiveDescentParser.NO_SIBLING
+        for symbol in first_production:
+            self.tree.append((symbol, parent_index, sibling_index))
+            sibling_index += 1
+
         self.working_stack.append((current, 1))
 
     def advance(self) -> None:
@@ -92,6 +102,7 @@ class RecursiveDescentParser:
         terminal = self.working_stack.pop()
         self.index -= 1
         self.input_stack.insert(0, terminal)
+        self.tree.pop()
 
     def another_try(self) -> None:
         print(f"ANOTHER TRY: {self}")
@@ -116,8 +127,12 @@ class RecursiveDescentParser:
                 print("Error: We have exhausted the search")
             return
         next_prod = productions[prod_index + 1]
-        # self.input_stack = list(next_prod) + self.input_stack[len(next_prod):]
         self.input_stack = list(next_prod) + self.input_stack[len(productions[prod_index]):]
+        parent_index = len(self.tree) - 1
+        sibling_index = RecursiveDescentParser.NO_SIBLING
+        for symbol in next_prod:
+            self.tree.append((symbol, parent_index, sibling_index))
+            sibling_index += 1
 
         self.working_stack.append((last_nonterminal, prod_index + 1))
         self.state = RecursiveDescentParser.NORMAL
@@ -144,6 +159,9 @@ class RecursiveDescentParser:
         self.input_sequence = pif
         assert self.input_sequence is not None
         self.input_stack = [_ for _ in pif]
+        self.tree.append(
+            (self.grammar.start_symbol, RecursiveDescentParser.NO_PARENT, RecursiveDescentParser.NO_SIBLING))
+
         while self.state not in [RecursiveDescentParser.ERROR, RecursiveDescentParser.FINAL]:
             print(f"MAIN LOOP: {self}")
             match self.state:
