@@ -7,7 +7,7 @@ if __name__ == "__main__":
     symbol_table = SymbolTable(10)
     lexer = Lexer("token.in", symbol_table)
 
-    lexer.tokenize("p1.txt")
+    lexer.tokenize("p2.txt")
     print(lexer.pif)
     symbol_table.display()
 
@@ -28,12 +28,12 @@ if __name__ == "__main__":
     print("Productions for A:", grammar.get_productions_for('A'))
     print("Is valid CFG?", grammar.is_valid_cfg())
     """
+    print(grammar2)
 
     input_sequence = ["a", "c", "b"]  # for grammar 1
 
-    input_sequence2 = lexer.pif
     # Initialize and run the parser
     parser = RecursiveDescentParser(grammar2)
-    result = parser.parse(input_sequence2)
+    result = parser.parse(lexer.pif)
     # Output the result
     print(f"Result: {result}")

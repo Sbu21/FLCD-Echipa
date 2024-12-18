@@ -36,8 +36,10 @@ class RecursiveDescentParser:
             raise ParseException("Provided grammar does not contain any productions")
 
     def __str__(self) -> str:
-        # return f"State: {self.state}, Index: {self.index}, Input Stack: {self.input_stack}, Working Stack: {self.working_stack}"
-        return f'Tree: {str(self.tree)}'
+        result = f'\nInput stack: {self.input_stack}\nWorking stack:{self.working_stack}\nTree:\n'
+        for index, production in enumerate(self.tree):
+            result += f"[{index}] {production}\n"
+        return result
 
     def expand(self) -> None:
         print(f"EXPAND: {self}")
@@ -45,6 +47,7 @@ class RecursiveDescentParser:
             self.error()
             print("Error: Attempted to expand an empty input stack")
             return
+
         current = self.input_stack.pop(0)
         if current not in self.grammar.get_nonterminals():
             self.error()
@@ -99,8 +102,13 @@ class RecursiveDescentParser:
             self.error()
             print("Error: Nowhere to backtrack")
             return
+
         terminal = self.working_stack.pop()
-        self.index -= 1
+        while not isinstance(terminal, tuple):
+            terminal = self.working_stack.pop()
+            self.tree.pop()
+            self.index -= 1
+
         self.input_stack.insert(0, terminal)
         self.tree.pop()
 
@@ -110,32 +118,38 @@ class RecursiveDescentParser:
             self.error()
             print("Error: Nowhere to backtrack")
             return
-        last = self.working_stack.pop()
-        if not (isinstance(last, tuple)
-                and len(last) == 2
-                and isinstance(last[0], str)
-                and isinstance(last[1], int)):
+
+        last_terminal_maybe = self.working_stack.pop()
+        while not isinstance(last_terminal_maybe, tuple):
+            last_terminal_maybe = self.working_stack.pop()
+            self.index -= 1
+
+        if not (isinstance(last_terminal_maybe, tuple)
+                and len(last_terminal_maybe) == 2
+                and isinstance(last_terminal_maybe[0], str)
+                and isinstance(last_terminal_maybe[1], int)):
             self.error()
-            print(f"Error: Tried taking another choice for a terminal ({last})")
+            print(f"Error: Tried taking another choice for a terminal ({last_terminal_maybe})")
             return
 
-        last_nonterminal, prod_index = last
+        last_nonterminal, prod_index = last_terminal_maybe
         productions = self.grammar.get_productions_for(last_nonterminal)
-        if prod_index >= len(productions) - 1:
-            if last_nonterminal == self.grammar.start_symbol and self.index == 1:
-                self.error()
-                print("Error: We have exhausted the search")
-            return
-        next_prod = productions[prod_index + 1]
-        self.input_stack = list(next_prod) + self.input_stack[len(productions[prod_index]):]
-        parent_index = len(self.tree) - 1
-        sibling_index = RecursiveDescentParser.NO_SIBLING
-        for symbol in next_prod:
-            self.tree.append((symbol, parent_index, sibling_index))
-            sibling_index += 1
 
-        self.working_stack.append((last_nonterminal, prod_index + 1))
-        self.state = RecursiveDescentParser.NORMAL
+        if prod_index >= len(productions) - 1:
+            print(f"Exhausted all productions for {last_nonterminal}, backtracking further...")
+            return self.another_try()  # Recursive call to try at a higher level
+        else:
+            next_prod = productions[prod_index + 1]
+            self.input_stack = list(next_prod) + self.input_stack[len(productions[prod_index]):]
+
+            parent_index = len(self.tree) - 1
+            sibling_index = RecursiveDescentParser.NO_SIBLING
+            for symbol in next_prod:
+                self.tree.append((symbol, parent_index, sibling_index))
+                sibling_index += 1
+
+            self.working_stack.append((last_nonterminal, prod_index + 1))
+            self.state = RecursiveDescentParser.NORMAL
 
     def success(self) -> None:
         """
@@ -148,6 +162,7 @@ class RecursiveDescentParser:
         if self.input_stack or self.index != (len(self.input_sequence) + 1):
             self.error()
             print("Error: Declared success but we didn't satisfy all reqs")
+
             return
         self.state = RecursiveDescentParser.FINAL
 
@@ -158,7 +173,7 @@ class RecursiveDescentParser:
         self.working_stack = []
         self.input_sequence = pif
         assert self.input_sequence is not None
-        self.input_stack = [_ for _ in pif]
+        self.input_stack = [self.grammar.start_symbol]
         self.tree.append(
             (self.grammar.start_symbol, RecursiveDescentParser.NO_PARENT, RecursiveDescentParser.NO_SIBLING))
 
@@ -170,6 +185,7 @@ class RecursiveDescentParser:
                         self.success()
                         continue
                     if 0 == len(self.input_stack):
+                        print(self)
                         raise ParseException("Unexpected end of input sequence.")
                     current = self.input_stack[0]
                     if current in self.grammar.get_nonterminals():
@@ -182,7 +198,8 @@ class RecursiveDescentParser:
                             self.momentary_insuccess()
                     continue
                 case RecursiveDescentParser.BACKTRACK:
-                    if len(self.working_stack):
+                    if 0 == len(self.working_stack):
+                        print(self)
                         raise ParseException("Unexpected end of processed sequence.")
                     current = self.working_stack[0]
                     if current == self.input_sequence[self.index]:
@@ -191,6 +208,7 @@ class RecursiveDescentParser:
                         self.another_try()
                     continue
                 case _:
+                    print(self)
                     raise ParseException(f"Unexpected state \"{self.state}\"")
         if self.state == self.FINAL:
             return "Sequence accepted"
