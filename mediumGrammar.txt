@@ -1,0 +1,31 @@
+# Non-terminals
+S
+Expr
+ExprPrime
+Term
+
+# Terminals
+identifier
+number
++
+-
+*
+/
+=
+(
+)
+
+# Productions
+S -> identifier = Expr
+Expr -> Term ExprPrime
+ExprPrime -> + Term ExprPrime
+ExprPrime -> - Term ExprPrime
+ExprPrime -> * Term ExprPrime
+ExprPrime -> / Term ExprPrime
+ExprPrime -> eps
+Term -> ( Expr )
+Term -> identifier
+Term -> number
+
+# Start symbol
+S

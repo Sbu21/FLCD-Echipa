@@ -21,10 +21,10 @@ class ResultItem:
 
 
 class ParserState:
-    NORMAL: str = 0
-    BACKTRACK: str = 1
-    ERROR: str = 2
-    FINAL: str = 3
+    NORMAL: str = "NORMAL"
+    BACKTRACK: str = "BACKTRACK"
+    ERROR: str = "ERROR"
+    FINAL: str = "FINAL"
 
     def __init__(self):
         self.state = ParserState.NORMAL
@@ -72,15 +72,19 @@ class RecursiveDescentParser:
         self.length: int = 0
 
     def __str__(self) -> str:
-        result = f'\nInput stack: {self.input_stack}\nWorking stack:{self.working_stack}\nTree:\n'
+        result = f'\nCurrent state: {self.state}\nInput stack: {self.input_stack}\nWorking stack:{self.working_stack}\nTree:\n'
         for index, production in enumerate(self.result):
             result += f"[{index}] {production}\n"
         return result
 
     def next_input(self):
+        if self.index >= len(self.input_stack):
+            return None
         return self.input_sequence[self.index]
 
     def current_input(self):
+        if self.index > len(self.input_sequence):
+            return None
         return self.input_sequence[self.index - 1]
 
     def no_more_input(self) -> bool:
@@ -152,7 +156,7 @@ class RecursiveDescentParser:
         """
         assert self.state.is_normal()
         assert self.input_stack and self.input_stack[0] in self.grammar.get_terminals()
-        assert self.input_stack[0] != self.next_input()
+        #assert self.input_stack[0] != self.next_input()
 
         self.state.insuccess()
 
@@ -239,7 +243,7 @@ class RecursiveDescentParser:
         while not (self.state.is_error() or self.state.is_final()):
             print(f"MAIN LOOP: {self}")
             if self.state.is_normal():
-                if self.index > self.length and self.no_more_input():
+                if self.index >= self.length and self.no_more_input():
                     self.success()
                     continue
                 if self.no_more_input():
@@ -259,7 +263,7 @@ class RecursiveDescentParser:
                 if self.no_more_work():
                     print(self)
                     raise ParseException("Unexpected end of processed sequence.")
-                current = self.working_stack[0]
+                current = self.working_stack[-1]
                 if current == self.next_input():
                     self.back()
                 else:
