@@ -10,7 +10,7 @@ class Token:
 
 
 class Nonterminal(Token):
-    def __init__(self, token: str, derivation_id: int = 1):
+    def __init__(self, token: str, derivation_id: int = 0):
         super().__init__(token)
         self.derivation_id = derivation_id
 
