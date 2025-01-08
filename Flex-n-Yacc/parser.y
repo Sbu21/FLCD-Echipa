@@ -1,3 +1,23 @@
+%{
+#include <stdio.h>
+#include <stdlib.h>
+
+void yyerror(const char *s) {
+    fprintf(stderr, "Error: %s\n", s);
+}
+
+extern int yylex();
+extern int yyparse();
+extern FILE *yyin;
+%}
+
+%token FUNCTION ENDFUNCTION IF ENDIF ELSE FOR ENDFOR WHILE ENDWHILE RESULT INT STRING ARRAY AND OR
+%token IDENTIFIER INT_CONSTANT STRING_CONSTANT ARRAY_CONSTANT
+%token LE EQ GE ARROW
+
+%left '+' '-'
+%left '*' '/' '%'
+
 %%
 program: function
         ;
@@ -69,3 +89,15 @@ RELATION: '<'
         | GE
         ;
 %%
+
+int main(int argc, char **argv) {
+    if (argc > 1) {
+        yyin = fopen(argv[1], "r");
+        if (!yyin) {
+            perror("fopen");
+            return 1;
+        }
+    }
+    yyparse();
+    return 0;
+}
