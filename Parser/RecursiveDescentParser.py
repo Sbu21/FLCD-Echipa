@@ -78,7 +78,7 @@ class RecursiveDescentParser:
         return result
 
     def next_input(self):
-        if self.index >= len(self.input_stack):
+        if self.index >= len(self.input_sequence):
             return None
         return self.input_sequence[self.index]
 
@@ -92,6 +92,33 @@ class RecursiveDescentParser:
 
     def no_more_work(self) -> bool:
         return 0 == len(self.working_stack)
+
+    def get_derivation(self, token: Nonterminal) -> list[str]:
+        """
+        Retrieve the respective derivation for the given token based on its derivation ID.
+
+        Args:
+            token (Nonterminal): The token from the working stack whose derivation we want to retrieve.
+
+        Returns:
+            list[str]: The derivation (production rule) associated with the token's derivation ID.
+
+        Raises:
+            ParseException: If the token is not a nonterminal or if no productions exist for the token.
+        """
+        if not isinstance(token, Nonterminal):
+            raise ParseException(f"Token {token} is not a Nonterminal.")
+
+        productions = self.grammar.get_productions().get(token.token)
+        if not productions:
+            raise ParseException(f"No productions found for nonterminal \"{token.token}\".")
+
+        if token.derivation_id < 1 or token.derivation_id > len(productions):
+            raise ParseException(
+                f"Invalid derivation ID {token.derivation_id} for nonterminal \"{token.token}\"."
+            )
+
+        return productions[token.derivation_id - 1]
 
     def expand(self) -> None:
         """
@@ -264,6 +291,8 @@ class RecursiveDescentParser:
                     print(self)
                     raise ParseException("Unexpected end of processed sequence.")
                 current = self.working_stack[-1]
+                if isinstance(current, Nonterminal):
+                    current = self.get_derivation(current)
                 if current == self.next_input():
                     self.back()
                 else:

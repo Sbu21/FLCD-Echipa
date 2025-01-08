@@ -5,13 +5,13 @@ from Parser.RecursiveDescentParser import RecursiveDescentParser
 
 if __name__ == "__main__":
     symbol_table = SymbolTable(10)
-    #lexer = Lexer("token.in", symbol_table)
+    lexer = Lexer("token.in", symbol_table)
     #lexer = Lexer("simpleToken.in", symbol_table)
-    lexer = Lexer("mediumToken.in", symbol_table)
+    #lexer = Lexer("mediumToken.in", symbol_table)
 
-    #lexer.tokenize("p2.txt")
+    lexer.tokenize("ptest.txt")
     #lexer.tokenize("simpleProgram.txt")
-    lexer.tokenize("mediumProgram.txt")
+    #lexer.tokenize("mediumProgram.txt")
     print(lexer.pif)
     symbol_table.display()
 
@@ -35,11 +35,12 @@ if __name__ == "__main__":
     #print(grammar2)
 
     #simpleGrammar = Cfg('simpleGrammar.txt')
-    mediumGrammar = Cfg('mediumGrammar.txt')
+    #mediumGrammar = Cfg('mediumGrammar.txt')
 
     # Initialize and run the parser
+    parser = RecursiveDescentParser(grammar2)
     #parser = RecursiveDescentParser(simpleGrammar)
-    parser = RecursiveDescentParser(mediumGrammar)
+    #parser = RecursiveDescentParser(mediumGrammar)
     result = parser.parse(lexer.pif)
     # Output the result
     print(f"Result: {result}")

@@ -51,8 +51,8 @@ and
 or
 # Productions
 program -> function identifier ( param_list ) cmpdstmt endfunction
-param_list -> param , param_list
 param_list -> param
+param_list -> param , param_list
 param_list -> eps
 param -> int identifier
 param -> string identifier
