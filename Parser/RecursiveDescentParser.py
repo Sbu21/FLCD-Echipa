@@ -7,12 +7,12 @@ class ResultItem:
     NO_PARENT: int = -1
     NO_SIBLING: int = -1
 
-    def __init__(self, token: str, parent_id: int = NO_PARENT, sibling_id: int = NO_SIBLING):
-        assert len(token) > 0
+    def __init__(self, value: Token, parent_id: int = NO_PARENT, sibling_id: int = NO_SIBLING):
+        assert len(value.token) > 0
         assert parent_id == ResultItem.NO_PARENT or parent_id >= 0
         assert sibling_id == ResultItem.NO_SIBLING or sibling_id >= 0
 
-        self.token: str = token
+        self.token: Token = value
         self.parent_id: int = parent_id
         self.sibling_id: int = sibling_id
 
@@ -73,8 +73,8 @@ class RecursiveDescentParser:
 
     def __str__(self) -> str:
         result = f'\nCurrent state: {self.state}\nInput stack: {self.input_stack}\nWorking stack:{self.working_stack}\nTree:\n'
-        for index, production in enumerate(self.result):
-            result += f"[{index}] {production}\n"
+        for index, resultItem in enumerate(self.result):
+            result += f"[{index}] {resultItem}\n"
         return result
 
     def next_input(self):
@@ -137,8 +137,8 @@ class RecursiveDescentParser:
         nonterminal = self.input_stack.pop(0)
 
         productions = self.grammar.get_productions()[nonterminal]
-        if not productions:
-            raise ParseException(f"No productions found for nonterminal \"{nonterminal}\"")
+
+        assert productions
 
         production = productions[0]
 
@@ -147,9 +147,12 @@ class RecursiveDescentParser:
         self.input_stack = list(production) + self.input_stack
 
         parent_id = len(self.working_stack) - 1
-        for i, token in enumerate(production):
+        for i, value in enumerate(production):
             sibling_id = len(self.result) - 1 if i > 0 else ResultItem.NO_SIBLING
-            self.result.append(ResultItem(token, parent_id=parent_id, sibling_id=sibling_id))
+            if value in self.grammar.get_nonterminals():
+                self.result.append(ResultItem(Nonterminal(value), parent_id=parent_id, sibling_id=sibling_id))
+            else:
+                self.result.append(ResultItem(Terminal(value), parent_id=parent_id, sibling_id=sibling_id))
 
     def advance(self) -> None:
         """
@@ -163,7 +166,6 @@ class RecursiveDescentParser:
         """
         assert self.state.is_normal()
         assert self.input_stack and self.input_stack[0] in self.grammar.get_terminals()
-        # assert self.input_stack[0] == self.next_input()
 
         terminal = self.input_stack.pop(0)
 
@@ -183,7 +185,6 @@ class RecursiveDescentParser:
         """
         assert self.state.is_normal()
         assert self.input_stack and self.input_stack[0] in self.grammar.get_terminals()
-        #assert self.input_stack[0] != self.next_input()
 
         self.state.insuccess()
 
@@ -220,6 +221,7 @@ class RecursiveDescentParser:
         assert self.state.is_backtrack()
         assert self.working_stack
         nonterminal = self.working_stack.pop()
+        self.result.pop()
         assert isinstance(nonterminal, Nonterminal)
         current_derivation_id = nonterminal.derivation_id
 
@@ -254,8 +256,8 @@ class RecursiveDescentParser:
 
     def parse(self, pif: list):
         """
-            Given a list of tokens represented by the pif, creates a list of ResultItems representing
-                the parsed version of the input
+        Given a list of tokens represented by the pif, creates a list of ResultItems representing
+            the parsed version of the input
         """
         print(f"Length of input sequence is {len(pif)}")
         self.state.reset()
@@ -265,7 +267,7 @@ class RecursiveDescentParser:
         assert self.input_sequence is not None
         self.length = len(pif)
         self.input_stack = [self.grammar.start_symbol]
-        self.result.append(ResultItem(self.grammar.start_symbol))
+        self.result.append(ResultItem(Nonterminal(self.grammar.start_symbol)))
 
         while not (self.state.is_error() or self.state.is_final()):
             print(f"MAIN LOOP: {self}")
