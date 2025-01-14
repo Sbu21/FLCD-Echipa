@@ -1,46 +1,25 @@
 from Lexer.Lexer import Lexer
 from Lexer.SymbolTable import SymbolTable
-from Parser.CFG.ContextFreeGrammar import ContextFreGrammar as Cfg
+from Parser.CFG.ContextFreeGrammar import ContextFreGrammar as Grammar
 from Parser.RecursiveDescentParser import RecursiveDescentParser
 
 if __name__ == "__main__":
-    symbol_table = SymbolTable(10)
-    lexer = Lexer("token.in", symbol_table)
-    #lexer = Lexer("simpleToken.in", symbol_table)
-    #lexer = Lexer("mediumToken.in", symbol_table)
+    TOKEN_ID = 0
+    PROGRAM_ID = 1
+    GRAMMAR_ID = 2
+    simple_config: tuple[str, str, str] = ("simpleToken.in", "simpleProgram.txt", "simpleGrammar.txt")
+    medium_config: tuple[str, str, str] = ("mediumToken.in", "mediumProgram.txt", "mediumGrammar.txt")
+    hard_config: tuple[str, str, str] = ("token.in", "ptest.txt", "g1")
 
-    lexer.tokenize("ptest.txt")
-    #lexer.tokenize("simpleProgram.txt")
-    #lexer.tokenize("mediumProgram.txt")
+    working_config = hard_config
+    symbol_table = SymbolTable(10)
+    lexer = Lexer(working_config[TOKEN_ID], symbol_table)
+
+    lexer.tokenize(working_config[PROGRAM_ID])
     print(lexer.pif)
     symbol_table.display()
 
-    grammar1 = Cfg('grammar')
-    """
-    print(grammar1)
-    print("Nonterminals:", grammar1.get_nonterminals())
-    print("Terminals:", grammar1.get_terminals())
-    print("Productions for A:", grammar1.get_productions_for('A'))
-    print("Is valid CFG?", grammar1.is_valid_cfg())
-    print('\n')
-    """
-    grammar2 = Cfg('g1')
-    """
+    grammar = Grammar(working_config[GRAMMAR_ID])
     print(grammar)
-    print("Nonterminals:", grammar.get_nonterminals())
-    print("Terminals:", grammar.get_terminals())
-    print("Productions for A:", grammar.get_productions_for('A'))
-    print("Is valid CFG?", grammar.is_valid_cfg())
-    """
-    #print(grammar2)
 
-    #simpleGrammar = Cfg('simpleGrammar.txt')
-    #mediumGrammar = Cfg('mediumGrammar.txt')
-
-    # Initialize and run the parser
-    parser = RecursiveDescentParser(grammar2)
-    #parser = RecursiveDescentParser(simpleGrammar)
-    #parser = RecursiveDescentParser(mediumGrammar)
-    result = parser.parse(lexer.pif)
-    # Output the result
-    print(f"Result: {result}")
+    parser = RecursiveDescentParser(grammar, lexer.pif)

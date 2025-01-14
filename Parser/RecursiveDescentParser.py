@@ -1,305 +1,152 @@
 from Parser.CFG.ContextFreeGrammar import ContextFreGrammar
 from Parser.ParseException import ParseException
-from Parser.Token import Token, Nonterminal, Terminal
+
+
+class Token:
+    def __init__(self, value: str):
+        self.value = value
+
+    def __repr__(self):
+        return f"{{ value:\"{self.value}\"}}"
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+
+class Terminal(Token):
+    def __init__(self, value: str):
+        super().__init__(value)
+
+    def __repr__(self):
+        return f"Terminal: {super().__repr__()}"
+
+    def __eq__(self, other):
+        return isinstance(other, Terminal) and super().__eq__(other)
+
+
+class NonTerminal(Token):
+    def __init__(self, value: str):
+        super().__init__(value)
+
+    def __repr__(self):
+        return f"NonTerminal: {super().__repr__()}"
+
+    def __eq__(self, other):
+        return isinstance(other, NonTerminal) and super().__eq__(other)
 
 
 class ResultItem:
-    NO_PARENT: int = -1
-    NO_SIBLING: int = -1
+    DEFAULT_ROW = 0
+    NO_PARENT = -1
+    NO_SIBLING = -1
 
-    def __init__(self, value: Token, parent_id: int = NO_PARENT, sibling_id: int = NO_SIBLING):
-        assert len(value.token) > 0
-        assert parent_id == ResultItem.NO_PARENT or parent_id >= 0
-        assert sibling_id == ResultItem.NO_SIBLING or sibling_id >= 0
+    def __init__(self, token: Token, row: int = DEFAULT_ROW, parent_id: int = NO_PARENT, sibling_id: int = NO_SIBLING):
+        self.token = token
+        self.row = row
+        self.parent_id = parent_id
+        self.sibling_id = sibling_id
 
-        self.token: Token = value
-        self.parent_id: int = parent_id
-        self.sibling_id: int = sibling_id
+    def __repr__(self):
+        return f"ResultItem: {{row:{self.row}, token: {self.token}, parent_id: {self.parent_id}, sibling_id: {self.sibling_id}}}"
 
-    def __str__(self):
-        return f"<{self.token}, {self.parent_id}, {self.sibling_id}>"
-
-
-class ParserState:
-    NORMAL: str = "NORMAL"
-    BACKTRACK: str = "BACKTRACK"
-    ERROR: str = "ERROR"
-    FINAL: str = "FINAL"
-
-    def __init__(self):
-        self.state = ParserState.NORMAL
-
-    def __str__(self):
-        return f"<{self.state}>"
-
-    def error(self) -> None:
-        self.state = ParserState.ERROR
-
-    def is_error(self) -> bool:
-        return self.state is ParserState.ERROR
-
-    def reset(self) -> None:
-        self.state = ParserState.NORMAL
-
-    def is_normal(self) -> bool:
-        return self.state is ParserState.NORMAL
-
-    def insuccess(self) -> None:
-        self.state = ParserState.BACKTRACK
-
-    def is_backtrack(self) -> bool:
-        return self.state is ParserState.BACKTRACK
-
-    def end(self) -> None:
-        self.state = ParserState.FINAL
-
-    def is_final(self) -> bool:
-        return self.state is ParserState.FINAL
+    def __eq__(self, other):
+        return (
+                isinstance(other, ResultItem) and
+                self.token == other.token and
+                self.row == other.row and
+                self.parent_id == other.parent_id and
+                self.sibling_id == other.sibling_id
+        )
 
 
 class RecursiveDescentParser:
-
-    def __init__(self, grammar: ContextFreGrammar) -> None:
-        if not grammar.get_productions():
-            raise ParseException("Provided grammar does not contain any productions")
+    def __init__(self, grammar: ContextFreGrammar, token_sequence: list[str]):
         self.grammar: ContextFreGrammar = grammar
-        self.input_sequence: list[str] = []
-        self.index: int = 0
-        self.working_stack: list[Token] = []
-        self.input_stack: list[str] = [grammar.start_symbol]
-        self.result: list[ResultItem] = []
-        self.state: ParserState = ParserState()
-        self.length: int = 0
+        self.result_builder: [ResultItem] = [ResultItem(NonTerminal(grammar.start_symbol))]
+        self.working_stack: [ResultItem] = [ResultItem(NonTerminal(grammar.start_symbol))]
+        self.index = 0
+        self.input = token_sequence
+        try:
+            self.parse()
+            print(f"Parsing successful:\n{"\n".join([str(item) for item in self.result_builder])}")
+        except ParseException as e:
+            print(f"Parse failed: {e}")
 
-    def __str__(self) -> str:
-        result = f'\nCurrent state: {self.state}\nInput stack: {self.input_stack}\nWorking stack:{self.working_stack}\nTree:\n'
-        for index, resultItem in enumerate(self.result):
-            result += f"[{index}] {resultItem}\n"
-        return result
+    def __repr__(self):
+        return (f"Index: {self.index}\n" +
+                f"Input: {self.input}\n" +
+                f"Current Symbol: {self.input[self.index]}\n" +
+                f"Working Stack: {self.working_stack}\n" +
+                f"Working Symbol: {self.working_stack[0]}\n"
+                )
 
-    def next_input(self):
-        if self.index >= len(self.input_sequence):
-            return None
-        return self.input_sequence[self.index]
+    def backup(self) -> tuple[int, list[ResultItem], list[ResultItem]]:
+        return self.index, self.result_builder[:], self.working_stack[:]
 
-    def current_input(self):
-        if self.index > len(self.input_sequence):
-            return None
-        return self.input_sequence[self.index - 1]
+    def restore(self, state: tuple[int, list[ResultItem], list[ResultItem]]):
+        print(f"\nRestoring {state}\n")
+        self.index, self.result_builder, self.working_stack = state
 
-    def no_more_input(self) -> bool:
-        return 0 == len(self.input_stack)
+    def consume_terminal(self):
+        if self.index >= len(self.input):
+            raise ParseException(f"Input exhausted while expecting a terminal.\nFull state:{self}")
 
-    def no_more_work(self) -> bool:
-        return 0 == len(self.working_stack)
+        current_terminal = self.working_stack[0].token
+        print(f"Consuming terminal \"{current_terminal}\"")
 
-    def get_derivation(self, token: Nonterminal) -> list[str]:
-        """
-        Retrieve the respective derivation for the given token based on its derivation ID.
-
-        Args:
-            token (Nonterminal): The token from the working stack whose derivation we want to retrieve.
-
-        Returns:
-            list[str]: The derivation (production rule) associated with the token's derivation ID.
-
-        Raises:
-            ParseException: If the token is not a nonterminal or if no productions exist for the token.
-        """
-        if not isinstance(token, Nonterminal):
-            raise ParseException(f"Token {token} is not a Nonterminal.")
-
-        productions = self.grammar.get_productions().get(token.token)
-        if not productions:
-            raise ParseException(f"No productions found for nonterminal \"{token.token}\".")
-
-        if token.derivation_id < 1 or token.derivation_id > len(productions):
+        if self.input[self.index] != current_terminal.value:
             raise ParseException(
-                f"Invalid derivation ID {token.derivation_id} for nonterminal \"{token.token}\"."
-            )
-
-        return productions[token.derivation_id - 1]
-
-    def expand(self) -> None:
-        """
-        Perform the Expand action
-        Prerequisites
-            - state is normal
-            - the head of the input stack is a nonterminal
-        Action
-            (normal, i, [Alpha], [A, Beta]) -> (normal ,i , [Alpha, A1], [Gamma1, Beta])
-                where  A -> Gamma1 | Gamma2 | ... represents all productions that correspond to A
-                and Gamma1 is the first production of A
-        """
-        assert self.state.is_normal()
-        assert self.input_stack and self.input_stack[0] in self.grammar.get_nonterminals()
-
-        nonterminal = self.input_stack.pop(0)
-
-        productions = self.grammar.get_productions()[nonterminal]
-
-        assert productions
-
-        production = productions[0]
-
-        self.working_stack.append(Nonterminal(nonterminal, derivation_id=1))
-
-        self.input_stack = list(production) + self.input_stack
-
-        parent_id = len(self.working_stack) - 1
-        for i, value in enumerate(production):
-            sibling_id = len(self.result) - 1 if i > 0 else ResultItem.NO_SIBLING
-            if value in self.grammar.get_nonterminals():
-                self.result.append(ResultItem(Nonterminal(value), parent_id=parent_id, sibling_id=sibling_id))
-            else:
-                self.result.append(ResultItem(Terminal(value), parent_id=parent_id, sibling_id=sibling_id))
-
-    def advance(self) -> None:
-        """
-        Perform the Advance action
-        Prerequisites:
-            - state is normal
-            - the head of the input stack is a terminal
-            - the head of the input stack is equal to the current symbol in the input stack
-        Action
-            (normal, i, [Alpha], [a_i, Beta]) -> (normal, i + 1, [Alpha, a_i], [Beta])
-        """
-        assert self.state.is_normal()
-        assert self.input_stack and self.input_stack[0] in self.grammar.get_terminals()
-
-        terminal = self.input_stack.pop(0)
-
-        self.working_stack.append(Terminal(terminal))
-
+                f"Expected terminal '{current_terminal.value}' but found '{self.input[self.index]}'\nFull state:{self}")
+        self.working_stack.pop(0)
         self.index += 1
 
-    def momentary_insuccess(self) -> None:
-        """
-        Perform the Momentary Insuccess action
-        Prerequisites
-            - state is normal
-            - head of input stack is a terminal
-            - head of input stack is not equal to the current symbol in the input stack
-        Action
-            (normal, i, [Alpha], [a_i, Beta]) -> (backtrack, i, [alpha], [a_i, Beta])
-        """
-        assert self.state.is_normal()
-        assert self.input_stack and self.input_stack[0] in self.grammar.get_terminals()
-
-        self.state.insuccess()
-
-    def back(self):
-        """
-        Perform the Back action:
-        Prerequisites
-            - state is backtrack
-            - head of working stack is a terminal
-        Action
-            (backtrack , i, [Alpha, a], [Beta]) -> (backtrack , i - 1, [Alpha], [a, Beta])
-        """
-        assert self.state.is_backtrack()
-        assert self.working_stack and isinstance(self.working_stack[-1], Terminal)
-
-        terminal = self.working_stack.pop()
-
-        self.input_stack.insert(0, terminal.token)
-
-        self.index -= 1
-
-    def another_try(self) -> None:
-        """
-        Perform the Another Try action
-        Prerequisites
-            - state is backtrack
-            - head of working stack is a nonterminal
-        Action
-            (backtrack, i, [Alpha, A_j], [Gamma_j, Beta]) ->
-                (normal, i, [Alpha, A_(j+1)], [Gamma_(j+1), Beta]) if there is a transition A->Gamma_(j+1)
-                (error, i , [Alpha], [Beta]) if i is 1 or A is the start symbol of the grammar
-                (backtrack, i, [Alpha], [A, Beta]) else
-        """
-        assert self.state.is_backtrack()
-        assert self.working_stack
-        nonterminal = self.working_stack.pop()
-        self.result.pop()
-        assert isinstance(nonterminal, Nonterminal)
-        current_derivation_id = nonterminal.derivation_id
-
-        productions = self.grammar.get_productions()[nonterminal.token]
-        if current_derivation_id >= len(productions):
-            if self.index == 1 or nonterminal.token == self.grammar.start_symbol:
-                self.state.error()
-                return
-            # Still backtrack, keep current nonterminal
-            self.input_stack.insert(0, nonterminal.token)
+    def parse(self):
+        if self.index == len(self.input) and not self.working_stack:
             return
 
-        next_derivation_id = current_derivation_id + 1
-        self.working_stack.append(Nonterminal(nonterminal.token, derivation_id=next_derivation_id))
+        if not self.working_stack:
+            raise ParseException(f"Stack mismatch at index {self.index}: input not fully consumed.")
 
-        next_derivation = productions[next_derivation_id - 1]
-        current_derivation = productions[current_derivation_id - 1]
-        self.input_stack = self.input_stack[len(current_derivation):]
-        self.input_stack = list(next_derivation) + self.input_stack
-        self.state.reset()
+        current_item = self.working_stack[0]
 
-    def success(self) -> None:
-        """
-        Perform the Success action
-        Action:
-            (normal, self.length + 1, [Alpha], []) -> (final, self.length + 1, [Alpha], [])
-        """
-        assert self.state.is_normal()
-        assert self.index == self.length + 1
-        assert not self.input_stack
-        self.state.end()
+        state = self.backup()
+        if isinstance(current_item.token, Terminal):
+            try:
+                self.consume_terminal()
+                self.parse()
+            except ParseException as e:
+                print(e)
+                self.restore(state)
+            finally:
+                return
+        elif isinstance(current_item.token, NonTerminal):
+            non_terminal = current_item.token
+            productions = self.grammar.get_productions().get(non_terminal.value, [])
+            if not productions:
+                raise ParseException(f"No productions for non-terminal '{non_terminal.value}'.")
 
-    def parse(self, pif: list):
-        """
-        Given a list of tokens represented by the pif, creates a list of ResultItems representing
-            the parsed version of the input
-        """
-        print(f"Length of input sequence is {len(pif)}")
-        self.state.reset()
-        self.index = 1
-        self.working_stack = []
-        self.input_sequence = pif
-        assert self.input_sequence is not None
-        self.length = len(pif)
-        self.input_stack = [self.grammar.start_symbol]
-        self.result.append(ResultItem(Nonterminal(self.grammar.start_symbol)))
+            for production in productions:
+                print(f'Trying {non_terminal.value} -> {production}')
+                parent_id = self.result_builder.index(current_item)
+                self.working_stack.pop(0)
 
-        while not (self.state.is_error() or self.state.is_final()):
-            print(f"MAIN LOOP: {self}")
-            if self.state.is_normal():
-                if self.index >= self.length and self.no_more_input():
-                    self.success()
-                    continue
-                if self.no_more_input():
-                    print(self)
-                    raise ParseException("Unexpected end of input sequence.")
-                current = self.input_stack[0]
-                if current in self.grammar.get_nonterminals():
-                    self.expand()
-                    continue
-                if current in self.grammar.get_terminals():
-                    if current == self.current_input():
-                        self.advance()
-                    else:
-                        self.momentary_insuccess()
-                continue
-            if self.state.is_backtrack():
-                if self.no_more_work():
-                    print(self)
-                    raise ParseException("Unexpected end of processed sequence.")
-                current = self.working_stack[-1]
-                if isinstance(current, Nonterminal):
-                    current = self.get_derivation(current)
-                if current == self.next_input():
-                    self.back()
-                else:
-                    self.another_try()
-                continue
-            print(self)
-            raise ParseException(f"Unexpected state \"{self.state}\"")
-        return "Sequence accepted" if self.state.is_final() else "Error: Parsing failed"
+                previous_sibling = ResultItem.NO_SIBLING
+                for i, token in enumerate(production):
+                    is_terminal = token in self.grammar.get_terminals()
+                    new_item = ResultItem(
+                        Terminal(token) if is_terminal else NonTerminal(token),
+                        row=(len(self.working_stack) + 1),
+                        parent_id=parent_id,
+                        sibling_id=previous_sibling
+                    )
+                    self.working_stack.append(new_item)
+                    self.result_builder.append(new_item)
+                    previous_sibling = new_item.row
+                try:
+                    self.parse()
+                    return
+                except ParseException as e:
+                    print(e)
+                    self.restore(state)
+
+            raise ParseException(f"Failed to expand non-terminal '{non_terminal.value}' at index {self.index}.")

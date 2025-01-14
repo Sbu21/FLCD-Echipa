@@ -1,8 +1,8 @@
 # Non-terminals
-S
-Expr
-ExprPrime
-Term
+program
+expression
+expression_aux
+term
 
 # Terminals
 identifier
@@ -16,16 +16,16 @@ number
 )
 
 # Productions
-S -> identifier = Expr
-Expr -> Term ExprPrime
-ExprPrime -> + Term ExprPrime
-ExprPrime -> - Term ExprPrime
-ExprPrime -> * Term ExprPrime
-ExprPrime -> / Term ExprPrime
-ExprPrime -> eps
-Term -> ( Expr )
-Term -> identifier
-Term -> number
+program -> identifier = expression
+expression -> term expression_aux
+expression_aux -> + term expression_aux
+expression_aux -> - term expression_aux
+expression_aux -> * term expression_aux
+expression_aux -> / term expression_aux
+expression_aux -> eps
+term -> ( expression )
+term -> identifier
+term -> number
 
 # Start symbol
-S
+program
