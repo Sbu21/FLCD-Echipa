@@ -75,7 +75,7 @@ class RecursiveDescentParser:
     def __repr__(self):
         return (f"Index: {self.index}\n" +
                 f"Input: {self.input}\n" +
-                f"Current Symbol: {self.input[self.index]}\n" +
+                f"Current Symbol: {self.input[self.index] if self.index < len(self.input) else None}\n" +
                 f"Working Stack: {self.working_stack}\n" +
                 f"Working Symbol: {self.working_stack[0]}\n"
                 )
@@ -109,16 +109,10 @@ class RecursiveDescentParser:
 
         current_item = self.working_stack[0]
 
-        state = self.backup()
         if isinstance(current_item.token, Terminal):
-            try:
-                self.consume_terminal()
-                self.parse()
-            except ParseException as e:
-                print(e)
-                self.restore(state)
-            finally:
-                return
+            self.consume_terminal()
+            self.parse()
+            return
         elif isinstance(current_item.token, NonTerminal):
             non_terminal = current_item.token
             productions = self.grammar.get_productions().get(non_terminal.value, [])
@@ -126,27 +120,31 @@ class RecursiveDescentParser:
                 raise ParseException(f"No productions for non-terminal '{non_terminal.value}'.")
 
             for production in productions:
+                state = self.backup()
                 print(f'Trying {non_terminal.value} -> {production}')
                 parent_id = self.result_builder.index(current_item)
                 self.working_stack.pop(0)
 
                 previous_sibling = ResultItem.NO_SIBLING
+                current_expansion = []
                 for i, token in enumerate(production):
                     is_terminal = token in self.grammar.get_terminals()
                     new_item = ResultItem(
                         Terminal(token) if is_terminal else NonTerminal(token),
-                        row=(len(self.working_stack) + 1),
+                        row=len(self.result_builder),
                         parent_id=parent_id,
                         sibling_id=previous_sibling
                     )
-                    self.working_stack.append(new_item)
                     self.result_builder.append(new_item)
+                    current_expansion.append(new_item)
                     previous_sibling = new_item.row
+                self.working_stack = current_expansion + self.working_stack
                 try:
                     self.parse()
                     return
                 except ParseException as e:
                     print(e)
+                    # Another try
                     self.restore(state)
 
             raise ParseException(f"Failed to expand non-terminal '{non_terminal.value}' at index {self.index}.")
