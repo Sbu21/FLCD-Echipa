@@ -1,0 +1,70 @@
+0: program
+├── 1: function
+├── 2: identifier
+├── 3: (
+├── 4: declaration_list
+│   ├── 8: declaration
+│   │   ├── 10: type
+│   │   │   └── 12: int
+│   │   └── 11: identifier
+│   └── 9: declaration_list_aux
+│       ├── 13: ,
+│       ├── 14: declaration
+│       │   ├── 16: type
+│       │   │   └── 18: int
+│       │   └── 17: identifier
+│       └── 15: declaration_list_aux
+├── 5: )
+├── 6: compound_statement
+│   └── 19: statement_list
+│       ├── 20: statement
+│       │   ├── 22: assign_statement
+│       │   │   ├── 23: identifier
+│       │   │   ├── 24: =
+│       │   │   └── 25: expression
+│       │   │       ├── 26: term
+│       │   │       │   ├── 28: factor
+│       │   │       │   │   └── 30: number
+│       │   │       │   └── 29: term_aux
+│       │   │       └── 27: expression_aux
+│       ├── 31: ;
+│       ├── 32: statement
+│       │   ├── 34: if_statement
+│       │   │   ├── 35: if
+│       │   │   ├── 36: condition
+│       │   │   │   ├── 39: expression
+│       │   │   │   │   ├── 42: term
+│       │   │   │   │   │   ├── 44: factor
+│       │   │   │   │   │   │   └── 46: identifier
+│       │   │   │   │   │   └── 45: term_aux
+│       │   │   │   │   └── 43: expression_aux
+│       │   │   │   ├── 40: relation
+│       │   │   │   │   └── 47: <
+│       │   │   │   └── 41: expression
+│       │   │   │       ├── 48: term
+│       │   │   │       │   ├── 50: factor
+│       │   │   │       │   │   └── 52: identifier
+│       │   │   │       │   └── 51: term_aux
+│       │   │   │       └── 49: expression_aux
+│       │   │   ├── 37: compound_statement
+│       │   │   │   └── 53: statement_list
+│       │   │   │       ├── 54: statement
+│       │   │   │       │   ├── 56: return_statement
+│       │   │   │       │   │   ├── 57: result
+│       │   │   │       │   │   ├── 58: <-
+│       │   │   │       │   │   └── 59: expression
+│       │   │   │       │   │       ├── 60: term
+│       │   │   │       │   │       │   ├── 62: factor
+│       │   │   │       │   │       │   │   └── 64: identifier
+│       │   │   │       │   │       │   └── 63: term_aux
+│       │   │   │       │   │       └── 61: expression_aux
+│       │   │   │       │   ├── 65: +
+│       │   │   │       │   └── 66: expression_aux
+│       │   │   │       │       ├── 67: expression
+│       │   │   │       │       │   ├── 68: term
+│       │   │   │       │       │   │   ├── 70: factor
+│       │   │   │       │       │   │   │   └── 72: identifier
+│       │   │   │       │       │   │   └── 71: term_aux
+│       │   │   │       │       │   └── 69: expression_aux
+│       │   │   │       │       └── 73: endif
+├── 7: endfunction

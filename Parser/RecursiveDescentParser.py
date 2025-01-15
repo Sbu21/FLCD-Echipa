@@ -68,7 +68,8 @@ class RecursiveDescentParser:
         self.input = token_sequence
         try:
             self.parse()
-            print(f"Parsing successful:\n{"\n".join([str(item) for item in self.result_builder])}")
+            print(f"Parsing successful:\n")
+            print(f"\n".join([str(item) for item in self.result_builder]))
         except ParseException as e:
             print(f"Parse failed: {e}")
 

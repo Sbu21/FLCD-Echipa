@@ -1,4 +1,4 @@
-@echo off
+    @echo off
 
 if "%~2"=="" (
     echo usage: run.bat ^<bison-file-with-no-suffix^> ^<flex-file-with-no-suffix^>
