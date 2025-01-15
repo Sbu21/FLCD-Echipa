@@ -76,13 +76,13 @@ statement -> if_statement
 statement -> for_statement
 statement -> while_statement
 statement -> return_statement
-assign_statement -> identifier = expression ;
+assign_statement -> identifier = expression
 if_statement -> if condition compound_statement if_statement_aux
 if_statement_aux -> else compound_statement endif
 if_statement_aux -> endif
 for_statement -> for ( assign_statement ; condition ; assign_statement ) compound_statement endfor
 while_statement -> while condition compound_statement endwhile
-return_statement -> result <- expression ;
+return_statement -> result <- expression
 expression -> term expression_aux
 expression_aux -> + expression_aux
 expression_aux -> - expression_aux
