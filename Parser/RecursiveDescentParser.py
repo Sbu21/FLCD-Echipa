@@ -47,7 +47,7 @@ class ResultItem:
         self.sibling_id = sibling_id
 
     def __repr__(self):
-        return f"ResultItem: {{row:{self.row}, token: {self.token}, parent_id: {self.parent_id}, sibling_id: {self.sibling_id}}}"
+        return f"ResultItem: [ {self.row} ] \'{self.token}\', parent_id: {self.parent_id}, sibling_id: {self.sibling_id}}}"
 
     def __eq__(self, other):
         return (

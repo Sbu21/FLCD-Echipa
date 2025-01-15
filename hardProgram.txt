@@ -1,6 +1,6 @@
 function myFunc(int a, int b)
-    a = 5;
+    a = 5;;
     if a < b
-        result <- a + b;
+        result <- a + b
     endif
 endfunction

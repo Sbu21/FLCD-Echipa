@@ -9,7 +9,7 @@ if __name__ == "__main__":
     GRAMMAR_ID = 2
     simple_config: tuple[str, str, str] = ("simpleToken.in", "simpleProgram.txt", "simpleGrammar.txt")
     medium_config: tuple[str, str, str] = ("mediumToken.in", "mediumProgram.txt", "mediumGrammar.txt")
-    hard_config: tuple[str, str, str] = ("token.in", "ptest.txt", "g1")
+    hard_config: tuple[str, str, str] = ("hardToken.in", "hardProgram.txt", "hardGrammar.txt")
 
     working_config = hard_config
     symbol_table = SymbolTable(10)

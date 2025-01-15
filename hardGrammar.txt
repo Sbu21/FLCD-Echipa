@@ -1,0 +1,109 @@
+# Non-terminals
+program
+declaration_list
+declaration
+compound_statement
+statement_list
+statement
+assign_statement
+if_statement
+for_statement
+while_statement
+return_statement
+expression
+term
+factor
+condition
+relation
+type
+statement_list_aux
+declaration_list_aux
+if_statement_aux
+expression_aux
+term_aux
+# Terminals
+function
+endfunction
+int
+string
+array
+result
+if
+else
+endif
+for
+endfor
+while
+endwhile
+identifier
+number
++
+-
+*
+/
+%
+=
+<-
+->
+(
+)
+,
+;
+<
+<=
+==
+>
+>=
+and
+or
+# Productions
+program -> function identifier ( declaration_list ) compound_statement endfunction
+declaration_list -> declaration declaration_list_aux
+declaration_list -> eps
+declaration_list_aux -> , declaration declaration_list_aux
+declaration_list_aux -> eps
+declaration -> type identifier
+type -> int
+type -> string
+type -> array
+compound_statement -> statement_list
+statement_list -> statement statement_list_aux
+statement_list -> eps
+statement_list_aux -> ; statement statement_list_aux
+statement_list_aux -> eps
+statement -> assign_statement
+statement -> if_statement
+statement -> for_statement
+statement -> while_statement
+statement -> return_statement
+assign_statement -> identifier = expression ;
+if_statement -> if condition compound_statement if_statement_aux
+if_statement_aux -> else compound_statement endif
+if_statement_aux -> endif
+for_statement -> for ( assign_statement ; condition ; assign_statement ) compound_statement endfor
+while_statement -> while condition compound_statement endwhile
+return_statement -> result <- expression ;
+expression -> term expression_aux
+expression_aux -> + expression_aux
+expression_aux -> - expression_aux
+expression_aux -> expression
+expression_aux -> eps
+term -> factor term_aux
+term_aux -> * term_aux
+term_aux -> / term_aux
+term_aux -> % term_aux
+term_aux -> term
+term_aux -> eps
+factor -> ( expression )
+factor -> identifier
+factor -> number
+condition -> expression relation expression
+relation -> <
+relation -> <=
+relation -> ==
+relation -> >
+relation -> >=
+relation -> and
+relation -> or
+# Start symbol
+program

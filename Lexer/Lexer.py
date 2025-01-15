@@ -13,7 +13,7 @@ class Lexer:
         with open(token_file, "r") as file:
             for line in file.readlines():
                 token = line.strip()
-                tokens[token] = token  # Map token to itself for easy lookup
+                tokens[token] = token
         return tokens
 
     def tokenize(self, source_file):
@@ -31,15 +31,15 @@ class Lexer:
                     continue
 
                 token, index = self.extract_token(line, index)
-                if token in self.tokens:  # Reserved keywords or operators
+                if token in self.tokens:
                     self.pif.append(token)
-                elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', token):  # Identifier
+                elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', token):
                     self.symbol_table.insert(token)
                     self.pif.append("identifier")
-                elif re.match(r'^\d+$', token):  # Constant
+                elif re.match(r'^\d+$', token):
                     self.symbol_table.insert(token)
                     self.pif.append("number")
-                else:  # Unknown token
+                else:
                     errors.append((line_number, token))
 
         if errors:
@@ -50,7 +50,7 @@ class Lexer:
 
     @staticmethod
     def extract_token(line, index):
-        operators = {'+', '-', '*', '/', '%', '=', '==', '<', '>', '->', '+=', '<=', '>='}
+        operators = {'+', '-', '*', '/', '%', '==', '<-', '->','<=','>=', '<', '>', '+=', '='}
         token = ""
         if line[index].isalnum() or line[index] == '_':
             while index < len(line) and (line[index].isalnum() or line[index] == '_'):
